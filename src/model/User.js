@@ -14,14 +14,19 @@ Array       数组
 
     const mongoose = require('mongoose')
     const Schema = mongoose.Schema
+    const UserSchema = new Schema({
+        username: {
+            type: String,
+            unique: true,
+            require: true
+        },
+        password: {
+            type: String,
+            require: true
+        },
+        email: {
+            type: String,
+        }
+    })
 
-
-
-    module.exports = new Schema({
-    title:  String,
-    author: String,
-    body:   String,
-    comments: [{ body: String, date: Date }],
-    date: { type: Date, default: Date.now },
-    hidden: Boolean,
-})
+    module.exports = mongoose.model('users', UserSchema)

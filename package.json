@@ -4,7 +4,7 @@
   "description": "Hello Koa 2 example with async",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node src/app.js"
   },
   "keywords": [
     "koa",
@@ -16,7 +16,7 @@
     "koa": "^2.0.0",
     "koa-bodyparser": "^3.2.0",
     "koa-router": "^7.0.0",
-    "mongodb": "^3.0.2",
-    "mongoose": "^5.0.4"
+    "mongoose": "^5.0.4",
+    "request-promise": "^4.2.2"
   }
 }
