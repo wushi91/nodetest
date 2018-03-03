@@ -4,12 +4,16 @@ const router = require('koa-router')();
 
 
 /* url前缀为api的路由*/
-const get_user_url = '/api/products'
-const post_login_url ='/api/login'
 
 const routers = router
+    //
     .post('/signup', userInfoController.signUp)
+    //
     .post('/signin', userInfoController.signIn)
+    //
+    .post('/user/accesstoken', userInfoController.accesstoken)
+
+
 
 
 

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test-api</title>
+
+    <link href="https://cdn.bootcss.com/normalize/7.0.0/normalize.css" rel="stylesheet">
+    <style>
+        .result-wrapper{
+            position: fixed;
+            background-color: white;
+            padding: 5px 10px 20px 10px;
+            top:0;
+            left: 0;
+            right: 0;
+        }
+        .result {
+            border: lightgray 2px solid;
+            height: 200px;
+
+            padding: 5px 10px;
+
+        }
+
+        .result span{
+            color: red;
+            font-weight: bold;
+            font-size: 20px;
+            display: inline-block;
+        }
+
+
+        .test-wrapper{
+            margin-top: 300px;
+            padding: 0px 10px 0px 10px;
+        }
+        .api-title {
+            display: inline-block;
+        }
+
+        .item {
+            margin: 5px 0;
+        }
+
+        .item span {
+            display: inline-block;
+            width: 100px;
+        }
+
+        .api-params input {
+            /*display: block;*/
+        }
+
+
+    </style>
+</head>
+
+
+<body>
+
+
+<div id="app">
+
+
+    <div class="result-wrapper">
+        <h3>返回结果</h3>
+        <div class="result">
+            <span>{</span>
+            <div class="result-s" v-for = "(parm,key) in result">
+                <span style="margin-left: 20px">{{key}} : {{parm}}</span>
+            </div>
+            <span>}</span>
+        </div>
+    </div>
+
+    <div class="test-wrapper">
+        <h3>接口测试</h3>
+        <div class="api-wrapper">
+            <!--一个api测试-->
+            <div class="api" v-for="(api,index) in apiList">
+                <h4 class="api-title">
+                    {{index+1}}. {{api.title}} ：{{api.method}} —> {{api.url}}
+                </h4>
+                <button @click="request(index)">测试</button>
+
+                <div class="item" v-for = "(parm,key) in api.params">
+                    <span class="params-title">{{key}}:</span>
+                    <input :name="key" v-model="apiList[index].params[key]"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+</div>
+
+
+<script src="https://cdn.bootcss.com/vue/2.5.12/vue.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
+<script>
+
+    new Vue({
+        el: '#app',
+        data: {
+            result: { "message": "验证成功!", "token": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODcwNDE2LCJleHAiOjE1MTk4ODEyMTZ9.jBQ0WUMWZYukVJ7FQsarw3Q0O3moaMEnSUmU4YNArYs", "name": "wls", "success": true },
+            apiList: [
+                {method:'POST',title:'用户注册',url:'/api/signup',params:{name:'',password:"",email:""}},
+                {method:'POST',title:'用户登陆',url:'/api/signin',params:{name:'',password:""}},
+                {method:'POST',title:'获取用户token',url:'/api/user/accesstoken',params:{name:'',password:""}},
+                {method:'POST',title:'添加心情',url:'/api/feels',params:{token:'',feel:'',create_time:''}},
+                {method:'GET',title:'查看所有心情',url:'/api/feels',params:{token:''}},
+            ],
+
+        },
+    // {name:'koa',password:"123456"}
+    //    [{type:'name',value:'koa'}]
+        methods: {
+            request: function (index) {
+
+                let item = this.apiList[index]
+
+                axios({
+                    method: item.method,
+                    headers: {'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODkzODI1LCJleHAiOjE1MTk5ODAyMjV9.1bnXNNsnxHBnlFvWlB5vhy_R_-VLklwVXQn2posqOvE'},
+                    url: item.url,
+                    data: item.params
+                }).then(res => {
+                    this.result = res.data
+                    console.log(res)
+                }).catch(err => {
+                    console.log(err.code)
+                    this.result = "请求出错"
+                    console.log(err)
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

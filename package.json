@@ -13,8 +13,11 @@
   "author": "wls",
   "license": "Apache-2.0",
   "dependencies": {
+    "bcrypt": "^1.0.3",
+    "jsonwebtoken": "^8.1.1",
     "koa": "^2.0.0",
     "koa-bodyparser": "^3.2.0",
+    "koa-jwt": "^3.3.0",
     "koa-router": "^7.0.0",
     "mongoose": "^5.0.4",
     "request-promise": "^4.2.2"
