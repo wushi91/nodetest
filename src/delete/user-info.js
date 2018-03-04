@@ -1,5 +1,5 @@
 const User = require('./../model/user')
-const APIError = require('../util/restful').APIError
+// const APIError = require('../util/restful').APIError
 const util = require('../util/util')
 
 module.exports = {

@@ -38,8 +38,8 @@ const requetWxOpenId = async (code, success, error)=>{
         uri: get_wx_openid_url,
         qs: {
             grant_type: 'authorization_code',
-            appid: config.appid,
-            secret: config.secret,
+            appid: config.wx.appid,
+            secret: config.wx.secret,
             js_code: code
         },
         headers: {
@@ -49,16 +49,8 @@ const requetWxOpenId = async (code, success, error)=>{
     };
 
     await requestPromise(options)
-        .then(res=> {
-            if(res.errcode){
-                error(res)
-            }else{
-                success(res)
-            }
-        })
-        .catch(err=> {
-            error(err)
-        })
+        .then(success)
+        .catch(error)
 }
 
 module.exports = {

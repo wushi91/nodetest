@@ -6,34 +6,47 @@
 
     <link href="https://cdn.bootcss.com/normalize/7.0.0/normalize.css" rel="stylesheet">
     <style>
-        .result-wrapper{
+        html, body {
+            height: 100%;
+        }
+
+        #app {
+            display: flex;
+        }
+
+        .result-wrapper {
             position: fixed;
             background-color: white;
             padding: 5px 10px 20px 10px;
-            top:0;
-            left: 0;
-            right: 0;
+            box-sizing: border-box;
+            height: 100%;
+            max-width: 30%;
+            width: 30%;
+            flex: 1;
+
         }
+
         .result {
             border: lightgray 2px solid;
-            height: 200px;
-
             padding: 5px 10px;
-
         }
 
-        .result span{
+        .result span {
             color: red;
             font-weight: bold;
             font-size: 20px;
-            display: inline-block;
+            display: block;
+            word-wrap: break-word;
+            word-break: normal;
         }
 
-
-        .test-wrapper{
-            margin-top: 300px;
+        .test-wrapper {
+            flex: 1;
             padding: 0px 10px 0px 10px;
+            box-sizing: border-box;
+            margin-left: 30%;
         }
+
         .api-title {
             display: inline-block;
         }
@@ -51,6 +64,13 @@
             /*display: block;*/
         }
 
+        textarea{
+            box-sizing: border-box;
+            padding: 5px 10px;
+            width: 100%;
+            height: 150px;
+        }
+
 
     </style>
 </head>
@@ -66,11 +86,14 @@
         <h3>返回结果</h3>
         <div class="result">
             <span>{</span>
-            <div class="result-s" v-for = "(parm,key) in result">
+            <div class="result-s" v-for="(parm,key) in result">
                 <span style="margin-left: 20px">{{key}} : {{parm}}</span>
             </div>
             <span>}</span>
         </div>
+        <h3>测试的token</h3>
+        <div>
+            <textarea v-model="token"></textarea></div>
     </div>
 
     <div class="test-wrapper">
@@ -83,13 +106,12 @@
                 </h4>
                 <button @click="request(index)">测试</button>
 
-                <div class="item" v-for = "(parm,key) in api.params">
+                <div class="item" v-for="(parm,key) in api.params">
                     <span class="params-title">{{key}}:</span>
                     <input :name="key" v-model="apiList[index].params[key]"></div>
             </div>
         </div>
     </div>
-
 
 
 </div>
@@ -102,18 +124,25 @@
     new Vue({
         el: '#app',
         data: {
-            result: { "message": "验证成功!", "token": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODcwNDE2LCJleHAiOjE1MTk4ODEyMTZ9.jBQ0WUMWZYukVJ7FQsarw3Q0O3moaMEnSUmU4YNArYs", "name": "wls", "success": true },
+            token:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODcwNDE2LCJleHAiOjE1MTk4ODEyMTZ9.jBQ0WUMWZYukVJ7FQsarw3Q0O3moaMEnSUmU4YNArYs",
+            result: {
+                "message": "验证成功!",
+                "token": "Bearer ..",
+                "name": "wls",
+                "success": true
+            },
             apiList: [
-                {method:'POST',title:'用户注册',url:'/api/signup',params:{name:'',password:"",email:""}},
-                {method:'POST',title:'用户登陆',url:'/api/signin',params:{name:'',password:""}},
-                {method:'POST',title:'获取用户token',url:'/api/user/accesstoken',params:{name:'',password:""}},
-                {method:'POST',title:'添加心情',url:'/api/feels',params:{token:'',feel:'',create_time:''}},
-                {method:'GET',title:'查看所有心情',url:'/api/feels',params:{token:''}},
+                {method: 'POST', title: '添加房源', url: '/api/lander/houses', params: {area: '', house_name: ""}},
+                {method: 'POST', title: '用户注册', url: '/api/signup', params: {name: '', password: "", email: ""}},
+                {method: 'POST', title: '用户登陆', url: '/api/signin', params: {name: '', password: ""}},
+                {method: 'POST', title: '获取用户token', url: '/api/user/accesstoken', params: {name: '', password: ""}},
+                {method: 'POST', title: '添加心情', url: '/api/feels', params: {token: '', feel: '', create_time: ''}},
+                {method: 'GET', title: '查看所有心情', url: '/api/feels', params: {token: ''}},
             ],
 
         },
-    // {name:'koa',password:"123456"}
-    //    [{type:'name',value:'koa'}]
+        // {name:'koa',password:"123456"}
+        //    [{type:'name',value:'koa'}]
         methods: {
             request: function (index) {
 
@@ -121,16 +150,16 @@
 
                 axios({
                     method: item.method,
-                    headers: {'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODkzODI1LCJleHAiOjE1MTk5ODAyMjV9.1bnXNNsnxHBnlFvWlB5vhy_R_-VLklwVXQn2posqOvE'},
+                    headers: {'authorization': this.token},
                     url: item.url,
                     data: item.params
                 }).then(res => {
                     this.result = res.data
-                    console.log(res)
-                }).catch(err => {
-                    console.log(err.code)
-                    this.result = "请求出错"
-                    console.log(err)
+
+                }).catch((err,res) => {
+                    let data = err.response.data
+                    data.status = err.response.status
+                    this.result = data
                 })
             }
         }

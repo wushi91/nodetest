@@ -1,4 +1,4 @@
-const APIError = require('../util/restful').APIError
+const APIError = require('./restful').APIError
 const request = require('../util/request')
 
 const getUser = async (ctx, next) => {
@@ -38,3 +38,55 @@ module.exports = {
     getUser,
     userLogin
 }
+// const verify = require('util').promisify(jwt.verify) // 解密,verifyAsync
+function verity() {
+    app.use(async (ctx, next) => {
+        if (ctx.request.path.startsWith('/api/')) {
+            let bearerToken;
+            let bearerHeader = ctx.request.header.authorization
+            if (typeof bearerHeader !== 'undefined') {
+                let bearer = bearerHeader.split(" ");
+                bearerToken = bearer[1];
+                let payload
+                try {
+                    payload = await verify(bearerToken, config.secret)  // 解密payload，获取用户名和ID
+                    ctx.payload = payload
+                    console.log(`payload: ${payload}`)
+                    console.log(payload)
+                    // ctx.request.body.token = bearerToken;
+                    await next();
+                } catch (err) {
+                    ctx.response.status = 401
+
+                    console.log('token verify fail: ', err)
+                }
+
+
+            } else {
+                ctx.response.status = 403
+            }
+        } else {
+            await next();
+        }
+    });
+}
+
+// log request URL:
+// app.use(async (ctx, next) => {
+//     console.log(`Process ${ctx.request.method} ${ctx.request.url}...`);
+//     await next();
+// });
+
+
+//
+// app.use(async (ctx, next) => {
+//     console.log("ctx.state.jwtdata")
+//     console.log(ctx.state)
+//     console.log(ctx.state.jwtdata)
+//     if(ctx.state.jwtdata){
+//         let data = new Date(ctx.state.jwtdata.exp)
+//         console.log(data)
+//     }
+//
+//     await next()
+// })
