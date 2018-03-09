@@ -33,13 +33,13 @@ const get_wx_openid_url = "https://api.weixin.qq.com/sns/jscode2session"
 
 // const http=require('http');
 // get 请求外网
-const requetWxOpenId = async (code, success, error)=>{
+const requetWxOpenId = async (code,appid,secret,success, error)=>{
     let options = {
         uri: get_wx_openid_url,
         qs: {
             grant_type: 'authorization_code',
-            appid: config.wx.appid,
-            secret: config.wx.secret,
+            appid: appid,
+            secret: secret,
             js_code: code
         },
         headers: {

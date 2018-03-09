@@ -124,7 +124,7 @@
     new Vue({
         el: '#app',
         data: {
-            token:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoid2xzIiwiaWF0IjoxNTE5ODcwNDE2LCJleHAiOjE1MTk4ODEyMTZ9.jBQ0WUMWZYukVJ7FQsarw3Q0O3moaMEnSUmU4YNArYs",
+            token:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcGVuaWQiOiJvQnUwZTBZWXFaX0dQQVJYZHNlb29LZHBraUEwIiwiaWF0IjoxNTIwNDg5MjU3LCJleHAiOjE1MzA4NTcyNTd9.VlnhufJL3Ca9WU9JUqj9qTbH2G2obQPyYKcWPK-5S4w",
             result: {
                 "message": "验证成功!",
                 "token": "Bearer ..",
@@ -132,6 +132,9 @@
                 "success": true
             },
             apiList: [
+                {method: 'PUT', title: '绑定房源', url: '/api/renter/books', params: {book_id: ""}},
+                {method: 'GET', title: '获取手机号下的房源', url: '/api/renter/books', params: {type: ""}},
+                {method: 'PUT', title: '绑定手机号', url: '/api/renter/phone', params: {phone: '', code: ""}},
                 {method: 'POST', title: '添加房源', url: '/api/lander/houses', params: {area: '', house_name: ""}},
                 {method: 'POST', title: '用户注册', url: '/api/signup', params: {name: '', password: "", email: ""}},
                 {method: 'POST', title: '用户登陆', url: '/api/signin', params: {name: '', password: ""}},
@@ -148,19 +151,34 @@
 
                 let item = this.apiList[index]
 
-                axios({
-                    method: item.method,
-                    headers: {'authorization': this.token},
-                    url: item.url,
-                    data: item.params
-                }).then(res => {
-                    this.result = res.data
+                if(item.method==="GET"){
+                    axios.get(item.url, {
+                        params: item.params,
+                        headers:{'authorization': this.token}
+                    }).then(res => {
+                        this.result = res.data
 
-                }).catch((err,res) => {
-                    let data = err.response.data
-                    data.status = err.response.status
-                    this.result = data
-                })
+                    }).catch((err,res) => {
+                        let data = err.response.data
+                        data.status = err.response.status
+                        this.result = data
+                    })
+                }else{
+                    axios({
+                        method: item.method,
+                        headers: {'authorization': this.token},
+                        url: item.url,
+                        data: item.params
+                    }).then(res => {
+                        this.result = res.data
+
+                    }).catch((err,res) => {
+                        let data = err.response.data
+                        data.status = err.response.status
+                        this.result = data
+                    })
+                }
+
             }
         }
     })

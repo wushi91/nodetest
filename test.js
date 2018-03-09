@@ -32,4 +32,9 @@ async function asyncSleep(){
     console.log('over')
 }
 
-asyncSleep()
+// asyncSleep()
+
+let regPath = /^\/apitest/
+let path = '/apites1t1/'
+
+console.log(regPath.test(path))

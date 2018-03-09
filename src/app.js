@@ -7,10 +7,11 @@ const jwt = require('jsonwebtoken')
 const router = require('koa-router')()
 
 
-//中间层
+//自定义中间层
 const error = require('./middle-ware/error-ware')
 const restify = require('./middle-ware/restify-ware')
-const verityToken = require('./middle-ware/verity-token-ware')
+const verifyToken = require('./middle-ware/verify-token-ware')
+const verifyLogin = require('./middle-ware/verify-login-ware')
 
 //路由
 const apiRouter = require('./router/api-router')
@@ -33,11 +34,15 @@ app.use(bodyParser())
 
 // restful api数据返回的格式化 意义一般
 app.use(restify())
+//
 
-// token验证
-app.use(verityToken())
+// token验证，这里是验证token的有效性
+app.use(verifyToken(config.token.secret,config.un_verity_token_path))
 
-//根据token寻找用户id
+//登陆验证，判断token是否有对应的用户id(根据token寻找用户id)
+app.use(verifyLogin(config.un_verity_token_path))
+
+//需要加入数据权限层，后期记得加入
 
 //路由
 router.use(htmlRouter.routes());
@@ -48,6 +53,13 @@ app.use(router.routes());
 //据说关闭自动索引速度会快一点{ config: { autoIndex: false } }
 mongoose.Promise = global.Promise; //连接前加上这句话
 mongoose.connect(config.database)
+mongoose.connection.on('error',function (err) {
+    console.log('数据库连接出错')
+});
+mongoose.connection.on('connected', function () {
+    console.log('数据库连接成功')
+});
+
 app.listen(3000);
 
 console.log('app started at port 3000...');

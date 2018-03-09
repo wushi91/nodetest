@@ -15,16 +15,23 @@ Array       数组
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const LanderSchema = new Schema({
+const RenterLoginSchema = new Schema({
     openid: {
         type: String,
         unique: true,
         require: true
     },
-    wx_user_info:{
-        type:Object
+    token:{
+        type: String,
+        unique: true,
+        require: true
+    },
+
+    create_date:{
+        type:Date
     }
+
 
 })
 
-module.exports = mongoose.model('landers', LanderSchema)
+module.exports = mongoose.model('renter-logins', RenterLoginSchema)

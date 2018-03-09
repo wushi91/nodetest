@@ -15,11 +15,15 @@ Array       数组
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const LanderSchema = new Schema({
+const RenterSchema = new Schema({
     openid: {
         type: String,
         unique: true,
         require: true
+    },
+    phone: {
+        type: String,
+
     },
     wx_user_info:{
         type:Object
@@ -27,4 +31,4 @@ const LanderSchema = new Schema({
 
 })
 
-module.exports = mongoose.model('landers', LanderSchema)
+module.exports = mongoose.model('renters', RenterSchema)
