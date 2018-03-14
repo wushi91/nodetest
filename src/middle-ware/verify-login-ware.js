@@ -38,7 +38,7 @@ module.exports = (unless)=>{
                 throw new AuthError("登录状态已经失效，请重新登录")
             }
 
-            console.log(loginStatus)
+            // console.log(loginStatus)
             ctx.login= {openid :loginStatus.openid}
         }
 

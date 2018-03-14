@@ -2,6 +2,7 @@ const Koa = require('koa');
 
 //第三方中间层
 const logger = require('koa-logger')
+const xmlParser = require('koa-xml-body')
 const bodyParser = require('koa-bodyparser')
 const jwt = require('jsonwebtoken')
 const router = require('koa-router')()
@@ -29,6 +30,13 @@ app.use(logger())
 // 错误处理中间层
 app.use(error())
 
+//微信返回的xml解析
+app.use(xmlParser())
+// app.use(async (ctx, next) => {
+//     console.log("----xmlParser----")
+//     console.log(ctx.request.body)
+//     await next()
+// })
 //表单解析,可以通过request.body获取post数据
 app.use(bodyParser())
 
@@ -55,9 +63,11 @@ mongoose.Promise = global.Promise; //连接前加上这句话
 mongoose.connect(config.database)
 mongoose.connection.on('error',function (err) {
     console.log('数据库连接出错')
+    console.log('mongodb connect error')
 });
 mongoose.connection.on('connected', function () {
     console.log('数据库连接成功')
+    console.log('mongodb connect success')
 });
 
 app.listen(3000);
