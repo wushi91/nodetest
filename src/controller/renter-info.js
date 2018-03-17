@@ -2,6 +2,7 @@ const Renter = require('./../model/Renter')
 const RenterLogin = require('./../model/RenterLogin')
 const Book = require('./../model/Book')
 const House = require('./../model/House')
+const Bill = require('./../model/Bill')
 
 const config = require('../../config')
 
@@ -9,10 +10,30 @@ const ApiError = require('../util/error').ApiError
 const AuthError = require('../util/error').AuthError
 
 const geneToken = require('../util/util').geneToken
+const getNextMonth = require('../util/util').getNextMonth
+const formatTimeYMD = require('../util/util').formatTimeYMD
+
 const requetWxOpenId = require('../util/request').requetWxOpenId
 const requestWxPayData = require('../util/request').requestWxPayData
+const requetQueryOrder = require('../util/request').requetQueryOrder
+
 const getXMLNodeValue = require('../util/xml-util').getXMLNodeValue
 const wxPay = require('../util/pay-util')
+
+
+//这里要做好充足的判断，调用出错
+async function orderSuccess(out_trade_no,bank_type,total_fee,time_end) {
+    //首先查看该账单的状态不等于SUCCESS，如果等于就不用操作了
+
+    // 订单支付成功后需要做的事情
+    let bill = await Bill.findOne({out_trade_no:out_trade_no,trade_state:"NOTPAY",is_delete_status: false})
+    bill.trade_state ="SUCCESS"
+    bill.total_fee =total_fee
+    bill.time_end =time_end
+    bill.bank_type =bank_type
+    bill = await bill.save()
+}
+
 
 module.exports = {
     //注册
@@ -141,6 +162,10 @@ module.exports = {
                 _id: 0,
                 __v: 0
             })
+            let rent_month_count = parseInt(item.rent_month_count.split('个月')[0])
+
+            item.rent_end_date = formatTimeYMD(getNextMonth(new Date(item.rent_begin_date),rent_month_count))
+            item.rent_begin_date = formatTimeYMD(new Date(item.rent_begin_date))
             item.house = house
             books[i] = item
         }
@@ -180,16 +205,85 @@ module.exports = {
         ctx.restSuccess({bind_book_ids: bind_book_ids})
     },
 
+    async toGetBillDetail(ctx) {
+
+        console.log("toGetBillDetail--------")
+        let {bill_id} = ctx.params
+
+        console.log("bill_id = "+bill_id)
+        if(!bill_id){
+            throw new ApiError("该账单有错误")
+        }
+
+        let bill = await Bill.findOne({_id: bill_id,trade_state:"NOTPAY",is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
+
+        if(!bill){
+            throw new ApiError("没有找到该账单或者该账单已完成")
+        }
+
+
+        console.log("sb---requetQueryOrder我去")
+        //支付前先差查一下订单的状态
+        await requetQueryOrder(bill.out_trade_no,xml=>{
+            console.log("---requetQueryOrder我去")
+            console.log(xml)
+
+            // let return_code = getXMLNodeValue('return_code', xml)
+            // let result_code = getXMLNodeValue('result_code', xml)
+            // let trade_state = getXMLNodeValue('trade_state', xml)
+
+
+            if (getXMLNodeValue('return_code', xml) === 'SUCCESS'&&getXMLNodeValue('result_code', xml) === 'SUCCESS'&&getXMLNodeValue('trade_state', xml) === 'SUCCESS') {
+            //    该订单已经支付，记住前提是这个订单是未支付的，因为没有回调成功，导致异常，才要进行这一步，
+                let out_trade_no = getXMLNodeValue('out_trade_no', xml)
+                let bank_type = getXMLNodeValue('bank_type', xml)
+                let total_fee = getXMLNodeValue('total_fee', xml,true)
+                let time_end = getXMLNodeValue('time_end', xml)
+                orderSuccess(out_trade_no,bank_type,total_fee,time_end)
+
+                throw new ApiError("该账单已经支付，请勿重新付款")
+            }else{
+
+                bill = bill.toObject()
+                delete bill.out_trade_no
+                ctx.restSuccess({bill:bill})
+            }
+
+
+
+        },err=>{
+            console.log("查询订单出错")
+            console.log(err)
+            throw err
+        })
+
+    },
+
+
     async toGetWxPayData(ctx) {
 
-        let openid = ctx.login.openid
+        let {bill_id} = ctx.request.query
 
-        console.log("开始支付")
+        console.log("bill_id = "+bill_id)
+        if(!bill_id){
+            throw new ApiError("该账单有错误")
+        }
+
+        let bill = await Bill.findOne({_id: bill_id,trade_state:"NOTPAY",is_delete_status: false})
+
+        if(!bill){
+            throw new ApiError("没有找到该账单或者该账单已完成")
+        }
+
+
+
+        let openid = ctx.login.openid
+        let out_trade_no =bill.out_trade_no
+        let body = bill.house_name+"-"+bill.title
+        let total_fee = bill.total_fee
         console.log(ctx.header.host)
-        console.log(ctx.header.host.match(/\d+.\d+.\d+.\d+/)[0])
-        await requestWxPayData(openid, xml => {
-            console.log("成功返回")
-            console.log(xml)
+
+        await requestWxPayData(out_trade_no,body,total_fee,openid, xml => {
             let return_code = getXMLNodeValue('return_code', xml)
             if (return_code !== 'SUCCESS') {
                 //通信失败
@@ -203,7 +297,7 @@ module.exports = {
             }
 
             let payData = {
-                appId: config.lander_wx.appid,
+                appId: config.renter_wx.appid,
                 nonceStr: wxPay.createNonceStr(),
                 package: 'prepay_id=' + getXMLNodeValue('prepay_id', xml),
                 signType: 'MD5',
@@ -211,10 +305,11 @@ module.exports = {
             }
             payData.paySign = wxPay.paySign(payData, config.wechat.mch_key)
 
+            delete payData.appid
             ctx.restSuccess({payData: payData})
 
         }, err => {
-            console.log("出错返回")
+            console.log("获取支付数据出错")
             throw err
         })
 
@@ -230,12 +325,50 @@ module.exports = {
             let sign = xml.sign
             delete xml.sign
             let newSign = wxPay.paySign(xml,config.wechat.mch_key)
-            if(sign.toString() === newSign.toString()){
+
+            if(sign.toString() === newSign.toString()&&xml.return_code.toString()==="SUCCESS"&&xml.result_code.toString()==="SUCCESS"){
+                console.log('签名一致----------------------')
+                await orderSuccess(xml.out_trade_no,xml.bank_type,xml.total_fee,xml.time_end)
+
+                //这里是返回给微信后台的，表示接受到了该信息
                 ctx.response.body = 'SUCCESS'
-                console.log('订单号为:' + ctx.request.body.xml.out_trade_no)
+
+            }
+
+        }
+    },
+
+    async toGetBill(ctx) {
+
+        let {book_id,trade_state} = ctx.request.query
+
+        let openid = ctx.login.openid
+
+        if(book_id){
+            //指定了book，获取该book_id下的账单，没有指定就获取全部
+        }else{
+            let books = await Book.find({renter_id: openid, is_delete_status: false}, {is_delete_status: 0, __v: 0})
+            book_id = {"$in":[]}
+            for(let i = 0; i < books.length; i++){
+                book_id["$in"].push(books[i]._id)
             }
         }
-    }
+
+
+        let bills = await Bill.find({book_id: book_id,trade_state:trade_state||"NOTPAY",is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
+        let allBill = []
+        //trade_state:"NOTPAY",
+        //所有的账本，然后再根据账本的id去找
+        // for (let i = 0; i < books.length; i++) {
+        //     let book_id = books[i]._id
+        //     let bills = await Bill.find({book_id: book_id,trade_state:"NOTPAY",is_delete_status: false},{bill_mark:0,trade_state:0,__v:0,out_trade_no:0,is_delete_status:0})
+        //     // console.log(bills)
+        //     allBill= allBill.concat(bills)
+        //
+        // }
+        ctx.restSuccess({list:bills})
+    },
+
 
 
 }

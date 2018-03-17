@@ -53,11 +53,11 @@ const createOrderNum = require('./src/util/pay-util').createOrderNum
 
 
 //订单号
-console.log('订单号是：')
-console.log(createOrderNum())
-
-console.log(Math.random().toString().substr(2,5))
-// console.log(('pro_wxpay' + Math.floor((Math.random()*10000000)+1)))
+// console.log('订单号是：')
+// console.log(createOrderNum())
+//
+// console.log(Math.random().toString().substr(2,5))
+// // console.log(('pro_wxpay' + Math.floor((Math.random()*10000000)+1)))
 
 
 // console.log('测试结果是：')
@@ -66,3 +66,31 @@ console.log(Math.random().toString().substr(2,5))
 // console.log(createBodyData())
 // console.log(Date.now())
 // console.log(Date.now())
+
+//getNextMonth
+
+// console.log(getNextMonth(new Date(),-1))
+
+
+const formatTimeYMD = require('./src/util/util').formatTimeYMD
+const getNextMonth = require('./src/util/util').getNextMonth
+// let rent_begin_date = new Date('2018/03/14')
+//
+// let rent_end_date = formatTimeYMD(getNextMonth(rent_begin_date,1))
+
+let rent_month_count = 24
+let rent_begin_date = '2018/01/14'
+
+let rent_end_date = formatTimeYMD(getNextMonth(new Date(rent_begin_date),rent_month_count))
+console.log(rent_month_count)
+console.log(rent_begin_date)
+console.log(rent_end_date)
+
+
+console.log(rent_end_date)
+// for(let i=1;i<=24;i++){
+//     // let body = getNextMonth(rent_begin_date,i-1)
+//     let body = '房租缴费-'+formatTimeYMD(getNextMonth(rent_begin_date,i-1))+"至"+formatTimeYMD(getNextMonth(rent_begin_date,i))
+//     console.log(body)
+//     // console.log(formatTimeYMD(getNextMonth(rent_begin_date,2)))
+// }

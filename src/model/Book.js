@@ -41,7 +41,6 @@ const BookSchema = new Schema({
 
     rent_month_count: {
         type: String,
-
     },
 
     pay_in_day: {

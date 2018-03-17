@@ -32,11 +32,7 @@ app.use(error())
 
 //微信返回的xml解析
 app.use(xmlParser())
-// app.use(async (ctx, next) => {
-//     console.log("----xmlParser----")
-//     console.log(ctx.request.body)
-//     await next()
-// })
+
 //表单解析,可以通过request.body获取post数据
 app.use(bodyParser())
 

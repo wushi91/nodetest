@@ -124,7 +124,7 @@
     new Vue({
         el: '#app',
         data: {
-            token:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcGVuaWQiOiJvQnUwZTBZWXFaX0dQQVJYZHNlb29LZHBraUEwIiwiaWF0IjoxNTIwNDg5MjU3LCJleHAiOjE1MzA4NTcyNTd9.VlnhufJL3Ca9WU9JUqj9qTbH2G2obQPyYKcWPK-5S4w",
+            token:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcGVuaWQiOiJvMmt3ZTBhR2hhOTE0NkFUam53Sk9zcnczRTBZIiwiaWF0IjoxNTIwOTkxMzQyLCJleHAiOjE1MzEzNTkzNDJ9.32-vm4G2ovr-kQrVU8_OUlHgPDvMT-jhsS-QCcZ3gmM",
             result: {
                 "message": "验证成功!",
                 "token": "Bearer ..",
@@ -132,6 +132,7 @@
                 "success": true
             },
             apiList: [
+                {method: 'POST', title: '生成账单', url: '/api/lander/books/bills', params: {book_id:""}},
                 {method: 'POST', title: '微信回调', url: '/api/notify', params: {}},
                 {method: 'PUT', title: '绑定房源', url: '/api/renter/books', params: {book_id: ""}},
                 {method: 'GET', title: '获取手机号下的房源', url: '/api/renter/books', params: {type: ""}},
