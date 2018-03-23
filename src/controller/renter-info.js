@@ -3,6 +3,7 @@ const RenterLogin = require('./../model/RenterLogin')
 const Book = require('./../model/Book')
 const House = require('./../model/House')
 const Bill = require('./../model/Bill')
+const LanderAccount = require('./../model/LanderAccount')
 
 const config = require('../../config')
 
@@ -21,18 +22,101 @@ const getXMLNodeValue = require('../util/xml-util').getXMLNodeValue
 const wxPay = require('../util/pay-util')
 
 
+
+
+
+
+
+
+
 //这里要做好充足的判断，调用出错
 async function orderSuccess(out_trade_no,bank_type,total_fee,time_end) {
     //首先查看该账单的状态不等于SUCCESS，如果等于就不用操作了
 
     // 订单支付成功后需要做的事情
     let bill = await Bill.findOne({out_trade_no:out_trade_no,trade_state:"NOTPAY",is_delete_status: false})
-    bill.trade_state ="SUCCESS"
-    bill.total_fee =total_fee
-    bill.time_end =time_end
-    bill.bank_type =bank_type
-    bill = await bill.save()
+
+    if(bill){
+        bill.trade_state ="SUCCESS"
+        bill.total_fee =total_fee
+        bill.time_end =time_end
+        bill.bank_type =bank_type
+        bill = await bill.save()
+
+    //    房东的帐号要对应的金额
+    //    根据账单的book_id找到房源，房源再去找到房东的id，然后就可以到account表上找到对应的用户，balance加上即可
+        let book_id = bill.book_id
+        let book = await Book.findOne({_id: book_id, is_delete_status: false})
+        let house_id = book.house_id
+        let house = await House.findOne({_id: house_id,is_delete_status: false})
+        let lander_id = house.openid
+
+        let landerAccount = await LanderAccount.findOne({lander_id: lander_id})
+        console.log("landerAccount")
+        console.log(landerAccount)
+        if(landerAccount){
+            let balance = parseInt(landerAccount.balance)+parseInt(bill.total_fee)
+            landerAccount.balance=balance
+        }else{
+            landerAccount = new LanderAccount({
+                lander_id: lander_id,
+                balance: bill.total_fee
+            })
+        }
+
+        await landerAccount.save()
+    }
+
+    return bill
+
 }
+
+
+async function geneBill(book) {
+    let house_id = book.house_id
+    let house = await House.findOne({_id: house_id,is_delete_status: false})
+    if(!house){
+        return
+    }
+    let house_name = house.house_name
+    let rent_begin_date = new Date(book.rent_begin_date)
+    let rent_month_count = parseInt(book.rent_month_count.split('个月')[0])
+    let pay_in_day = book.pay_in_day
+    let add_bill_ids = []
+    //生成第一个月，第二个月，第三个月的房租
+    for(let i=1;i<=rent_month_count;i++){
+        let bill_mark = i
+        //判断该账单是否存在
+        let hasBill = await Bill.findOne({book_id: book._id, bill_mark:bill_mark,is_delete_status: false})
+        if(hasBill){
+            continue//改账单已经存在了，下一个
+        }
+
+        console.log("bill_mark = "+bill_mark)
+        let start_date = formatTimeYMD(getNextMonth(rent_begin_date,i-1))
+        let over_date = formatTimeYMD(getNextMonth(rent_begin_date,i))
+        let out_trade_no = wxPay.createOrderNum()
+
+        let title = start_date.split('/')[0]+'年'+start_date.split('/')[1]+'月'+'房租'
+        let total_fee = book.money_per_month
+
+        let newBill = new Bill({
+            book_id:book._id,
+            bill_mark:bill_mark,
+            out_trade_no : out_trade_no,
+            start_date:start_date,
+            over_date:over_date,
+            total_fee: total_fee,
+            pay_in_day:pay_in_day,
+            house_name:house_name,
+            title:title
+
+        });
+        newBill = await newBill.save()
+    }
+
+}
+
 
 
 module.exports = {
@@ -173,6 +257,7 @@ module.exports = {
         ctx.restSuccess({list: books, phone: renter_phone})
     },
 
+    //其实是绑定房源的操作，同时要生成账单
     async toPutBookPhone(ctx) {
         let {book_ids} = ctx.request.body
         let openid = ctx.login.openid
@@ -184,12 +269,12 @@ module.exports = {
             console.log(book_id)
             let book = await Book.findOne({_id: book_id});
 
-            if (!book) {
-                // throw new ApiError("没有找到指定的房源（账本）")
-            }
-            if (book.renter_id) {
-                // throw new ApiError("该房源（账本）已经绑定")
-            }
+            // if (!book) {
+            //     // throw new ApiError("没有找到指定的房源（账本）")
+            // }
+            // if (book.renter_id) {
+            //     // throw new ApiError("该房源（账本）已经绑定")
+            // }
 
             if (book && !book.renter_id) {
                 book.renter_id = openid
@@ -197,6 +282,9 @@ module.exports = {
                 if (book.errors) {
                     // throw new ApiError('数据保存出错')
                 } else {
+
+                    //
+                    await geneBill(book)
                     bind_book_ids.push(book_id)
                 }
             }
@@ -215,47 +303,70 @@ module.exports = {
             throw new ApiError("该账单有错误")
         }
 
-        let bill = await Bill.findOne({_id: bill_id,trade_state:"NOTPAY",is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
+        let bill = await Bill.findOne({_id: bill_id,is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
 
         if(!bill){
-            throw new ApiError("没有找到该账单或者该账单已完成")
+            throw new ApiError("没有找到该账单")
+        }
+
+        if(bill.trade_state==="NOTPAY"){
+
+        //    查询是否支付，如果已经支付要处理状态
+            await requetQueryOrder(bill.out_trade_no,async xml=>{
+                console.log("---requetQueryOrder我去")
+                console.log(xml)
+                if (getXMLNodeValue('return_code', xml) === 'SUCCESS'&&getXMLNodeValue('result_code', xml) === 'SUCCESS'&&getXMLNodeValue('trade_state', xml) === 'SUCCESS') {
+                    //    该订单已经支付，记住前提是这个订单是未支付的，因为没有回调成功，导致异常，才要进行这一步，
+                    let out_trade_no = getXMLNodeValue('out_trade_no', xml)
+                    let bank_type = getXMLNodeValue('bank_type', xml)
+                    let total_fee = getXMLNodeValue('total_fee', xml,true)
+                    let time_end = getXMLNodeValue('time_end', xml)
+                    bill = await orderSuccess(out_trade_no,bank_type,total_fee,time_end)
+
+                    console.log("-------------------")
+                    console.log(bill)
+                }
+
+            },err=>{
+                console.log("查询订单出错")
+                console.log(err)
+                throw err
+            })
         }
 
 
-        console.log("sb---requetQueryOrder我去")
-        //支付前先差查一下订单的状态
-        await requetQueryOrder(bill.out_trade_no,xml=>{
-            console.log("---requetQueryOrder我去")
-            console.log(xml)
+        bill = bill.toObject()
+        delete bill.out_trade_no
+        ctx.restSuccess({bill:bill})
 
-            // let return_code = getXMLNodeValue('return_code', xml)
-            // let result_code = getXMLNodeValue('result_code', xml)
-            // let trade_state = getXMLNodeValue('trade_state', xml)
-
-
-            if (getXMLNodeValue('return_code', xml) === 'SUCCESS'&&getXMLNodeValue('result_code', xml) === 'SUCCESS'&&getXMLNodeValue('trade_state', xml) === 'SUCCESS') {
-            //    该订单已经支付，记住前提是这个订单是未支付的，因为没有回调成功，导致异常，才要进行这一步，
-                let out_trade_no = getXMLNodeValue('out_trade_no', xml)
-                let bank_type = getXMLNodeValue('bank_type', xml)
-                let total_fee = getXMLNodeValue('total_fee', xml,true)
-                let time_end = getXMLNodeValue('time_end', xml)
-                orderSuccess(out_trade_no,bank_type,total_fee,time_end)
-
-                throw new ApiError("该账单已经支付，请勿重新付款")
-            }else{
-
-                bill = bill.toObject()
-                delete bill.out_trade_no
-                ctx.restSuccess({bill:bill})
-            }
-
-
-
-        },err=>{
-            console.log("查询订单出错")
-            console.log(err)
-            throw err
-        })
+        // console.log("sb---requetQueryOrder我去")
+        // //支付前先差查一下订单的状态
+        // await requetQueryOrder(bill.out_trade_no,xml=>{
+        //     console.log("---requetQueryOrder我去")
+        //     console.log(xml)
+        //     if (getXMLNodeValue('return_code', xml) === 'SUCCESS'&&getXMLNodeValue('result_code', xml) === 'SUCCESS'&&getXMLNodeValue('trade_state', xml) === 'SUCCESS') {
+        //     //    该订单已经支付，记住前提是这个订单是未支付的，因为没有回调成功，导致异常，才要进行这一步，
+        //         let out_trade_no = getXMLNodeValue('out_trade_no', xml)
+        //         let bank_type = getXMLNodeValue('bank_type', xml)
+        //         let total_fee = getXMLNodeValue('total_fee', xml,true)
+        //         let time_end = getXMLNodeValue('time_end', xml)
+        //         bill = orderSuccess(out_trade_no,bank_type,total_fee,time_end)
+        //         bill = bill.toObject()
+        //         delete bill.out_trade_no
+        //         ctx.restSuccess({bill:bill})
+        //
+        //     }else{
+        //
+        //         bill = bill.toObject()
+        //         delete bill.out_trade_no
+        //         ctx.restSuccess({bill:bill})
+        //     }
+        //
+        // },err=>{
+        //     console.log("查询订单出错")
+        //     console.log(err)
+        //     throw err
+        // })
 
     },
 
@@ -280,7 +391,8 @@ module.exports = {
         let openid = ctx.login.openid
         let out_trade_no =bill.out_trade_no
         let body = bill.house_name+"-"+bill.title
-        let total_fee = bill.total_fee
+        // let total_fee = bill.total_fee
+        let total_fee = 1
         console.log(ctx.header.host)
 
         await requestWxPayData(out_trade_no,body,total_fee,openid, xml => {
@@ -355,8 +467,23 @@ module.exports = {
         }
 
 
-        let bills = await Bill.find({book_id: book_id,trade_state:trade_state||"NOTPAY",is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
-        let allBill = []
+        if(!trade_state){
+            trade_state = "NOTPAY"
+        }
+
+        if(trade_state.split("&&").length===1){
+            console.log("单个")
+        }else{
+            let trade_state_arr  = trade_state.split("&&")
+            trade_state = {"$in":[]}
+            for(let i = 0; i < trade_state_arr.length; i++){
+                trade_state["$in"].push(trade_state_arr[i])
+            }
+        }
+
+
+        let bills = await Bill.find({book_id: book_id,trade_state:trade_state,is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
+        // let allBill = []
         //trade_state:"NOTPAY",
         //所有的账本，然后再根据账本的id去找
         // for (let i = 0; i < books.length; i++) {
@@ -366,6 +493,21 @@ module.exports = {
         //     allBill= allBill.concat(bills)
         //
         // }
+
+        let bills_return = []
+        let currentDate = new Date()
+        for(let i=0;i<bills.length;i++){
+            let start_date = new Date(bills[i].start_date)
+            if(start_date>currentDate){
+                // console.log("大于今天，未到付款日期")
+            }else{
+                bills_return.push(bills[i])
+                // console.log("小于今天，已到付款日期")
+            }
+        }
+
+        bills = bills_return
+
         ctx.restSuccess({list:bills})
     },
 

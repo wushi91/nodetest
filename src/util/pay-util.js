@@ -28,7 +28,7 @@ function paySign(_array,key) {
     let string = getRawString(_array);
     //key为在微信商户平台(pay.weixin.qq.com)-->账户设置-->API安全-->密钥设置
     key = key||"";
-    console.log(string)
+    // console.log(string)
     string = string + '&key='+key;
     let crypto = require('crypto');
     let cryString = crypto.createHash('md5').update(string,'utf8').digest('hex');

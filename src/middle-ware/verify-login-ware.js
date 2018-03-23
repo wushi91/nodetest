@@ -35,7 +35,7 @@ module.exports = (unless)=>{
             }
 
             if(!loginStatus){
-                throw new AuthError("登录状态已经失效，请重新登录")
+                throw new AuthError("请重新登录")
             }
 
             // console.log(loginStatus)

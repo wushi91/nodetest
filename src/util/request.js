@@ -9,6 +9,10 @@ const get_wx_pay_data_url = "https://api.mch.weixin.qq.com/pay/unifiedorder"
 
 const order_query_url = "https://api.mch.weixin.qq.com/pay/orderquery"
 
+const get_cash_url = "https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers"
+
+const fs = require("fs")
+
 // get 请求外网
 const requetWxOpenId = async (code,appid,secret,success, error)=>{
     let options = {
@@ -94,7 +98,7 @@ const requestWxPayData = async (out_trade_no,body,total_fee,openid,success,error
         openid: openid,
         spbill_create_ip: spbillId , //客户端ip
         trade_type: 'JSAPI',
-        total_fee: 1,//total_fee, //支付金额，单位分
+        total_fee: total_fee, //支付金额，单位分
         nonce_str: createNonceStr(),
         limit_pay: wechat.limit_pay, //是否支付信用卡支付
     }
@@ -150,6 +154,45 @@ const requetQueryOrder = async (out_trade_no,success, error)=>{
         .catch(error)
 }
 
+
+// get 请求外网order_query_url
+const requetGetCashToLander = async (partner_trade_no,openid,amount,success, error)=>{
+
+    let order ={
+        mch_appid: wechat.lander_appid,
+        mchid: wechat.mch_lander_id, //微信支付商户号
+        partner_trade_no: partner_trade_no, //订单号
+        nonce_str: createNonceStr(),
+        openid:openid,
+        check_name:"NO_CHECK",//不校验真实姓名
+        amount:amount,
+        desc:"房东提现",
+        spbill_create_ip:"127.0.0.1"
+    }
+
+    order.sign = paySign(order,wechat.mch_lander_key)
+
+    let xmlData = getXmlFormat(order)
+
+    let options = {
+        method: 'POST',
+        uri: get_cash_url,
+        body: xmlData,
+        json: false,// Automatically stringifies the body to JSON
+        agentOptions: {
+            pfx: fs.readFileSync('./cert/apiclient_cert.p12'),
+            passphrase: wechat.mch_lander_id
+        }
+    };
+
+
+
+
+    await requestPromise(options)
+        .then(success)
+        .catch(error)
+}
+
 module.exports = {
-    requetWxOpenId,requestWxPayData,requetQueryOrder
+    requetWxOpenId,requestWxPayData,requetQueryOrder,requetGetCashToLander
 }

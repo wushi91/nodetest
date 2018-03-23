@@ -11,7 +11,7 @@ module.exports = (secret,unless)=>{
         } catch (err) {
             //这个表示的是有jwt模块抛出的异常
             if(err&&err.name==='UnauthorizedError'){
-                throw new AuthError()
+                throw new AuthError("请重新登录")
             }else{
                 throw err
             }

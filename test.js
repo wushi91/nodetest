@@ -73,24 +73,39 @@ const createOrderNum = require('./src/util/pay-util').createOrderNum
 
 
 const formatTimeYMD = require('./src/util/util').formatTimeYMD
+const formatTime = require('./src/util/util').formatTime
 const getNextMonth = require('./src/util/util').getNextMonth
-// let rent_begin_date = new Date('2018/03/14')
+// // let rent_begin_date = new Date('2018/03/14')
+// //
+// // let rent_end_date = formatTimeYMD(getNextMonth(rent_begin_date,1))
 //
-// let rent_end_date = formatTimeYMD(getNextMonth(rent_begin_date,1))
-
-let rent_month_count = 24
-let rent_begin_date = '2018/01/14'
-
-let rent_end_date = formatTimeYMD(getNextMonth(new Date(rent_begin_date),rent_month_count))
-console.log(rent_month_count)
-console.log(rent_begin_date)
-console.log(rent_end_date)
-
-
-console.log(rent_end_date)
-// for(let i=1;i<=24;i++){
+// let rent_month_count = 24
+// let rent_begin_date = '2018/01/14'
+//
+// let rent_end_date = formatTimeYMD(getNextMonth(new Date(rent_begin_date),rent_month_count))
+// console.log(rent_month_count)
+// console.log(rent_begin_date)
+// console.log(rent_end_date)
+//
+//
+// console.log(rent_end_date)
+// // for(let i=1;i<=24;i++){
 //     // let body = getNextMonth(rent_begin_date,i-1)
 //     let body = '房租缴费-'+formatTimeYMD(getNextMonth(rent_begin_date,i-1))+"至"+formatTimeYMD(getNextMonth(rent_begin_date,i))
 //     console.log(body)
 //     // console.log(formatTimeYMD(getNextMonth(rent_begin_date,2)))
 // }
+
+let today = new Date()
+let yesterday  =  new Date()
+yesterday.setDate(today.getDate()-1)
+yesterday.setHours(23)
+yesterday.setMinutes(59)
+yesterday.setSeconds(59)
+
+let  tomorrow  =  new Date()
+tomorrow.setDate(today.getDate()+1)
+tomorrow.setHours(0)
+tomorrow.setMinutes(0)
+tomorrow.setSeconds(0)
+console.log(formatTime(tomorrow))

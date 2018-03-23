@@ -11,10 +11,13 @@ const renter_path_pre = '/renter'//外部路由已经判断/api前缀了
 const post_lander_token = lander_path_pre+'/accesstoken'
 const to_houses = lander_path_pre+'/houses'
 const to_delete_house = lander_path_pre+'/houses/:house_id'
+const to_book = lander_path_pre+'/books/:book_id'
 const to_houses_books = lander_path_pre + '/houses/books'
 const post_books_bills = lander_path_pre+ '/books/bills'
 const to_lander_bill = lander_path_pre + '/bills'
-
+const to_lander_accounts = lander_path_pre + '/accounts'
+const to_cashorder = lander_path_pre + '/cashorder'
+const to_cashorder_detail = lander_path_pre + '/cashorder/:cash_order_id'
 // 房客
 const post_renter_token = renter_path_pre+'/accesstoken'
 const put_renter_phone = renter_path_pre+'/phone'
@@ -34,7 +37,14 @@ module.exports = router
     .post(post_books_bills,landerInfoController.postBookBill)
     // .get(post_books_bills,landerInfoController.toBookBill)
     .get(to_lander_bill,landerInfoController.toGetBill)
-
+    .put(to_lander_bill,landerInfoController.toPutBillClose)
+    .delete(to_delete_house,landerInfoController.toDeleteHouse)
+    .delete(to_book,landerInfoController.toDeleteBook)
+    .put(to_book,landerInfoController.toPutBookMoney)
+    .get(to_lander_accounts,landerInfoController.toGetLanderAccount)
+    .put(to_lander_accounts,landerInfoController.toPutLanderAccountBalance)
+    .get(to_cashorder,landerInfoController.toGetCashOrders)
+    .get(to_cashorder_detail,landerInfoController.toGetCashOrderDetail)
     //租客
     .post(post_renter_token,renterInfoController.postRenterToken)
     .put(put_renter_phone,renterInfoController.putRenterPhone)

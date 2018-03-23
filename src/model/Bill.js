@@ -90,7 +90,12 @@ const BillSchema = new Schema({
     is_delete_status:{
         type:Boolean,
         default:false
-    }
+    },
+
+    //用户手动关闭才会有的信息
+    close_info: {
+        type: Object,
+    },
 
 })
 

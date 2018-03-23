@@ -1,5 +1,5 @@
 
-
+//证书的地址
 
 module.exports = {
     host: "http://localhost:3000",
@@ -31,8 +31,8 @@ module.exports = {
         renter_appid:"wx76a45f2fd2e25b1d",
         renter_secret:"b995334388611c4519f1dcbe9a543d08",
 
-        // mch_id:'1487882592',
-        // mch_key:'sunchuanjunzufangzhangben8812345',
+        mch_lander_id:'1487882592',
+        mch_lander_key:'sunchuanjunzufangzhangben8812345',
         mch_id:'1492103342',
         mch_key:'sunchuanjunzufangzhangbenfk88123',
         // mch_id:'1485503632',
