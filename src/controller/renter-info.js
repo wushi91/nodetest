@@ -4,6 +4,7 @@ const Book = require('./../model/Book')
 const House = require('./../model/House')
 const Bill = require('./../model/Bill')
 const LanderAccount = require('./../model/LanderAccount')
+const SMSCode = require('./../model/SMSCode')
 
 const config = require('../../config')
 
@@ -23,7 +24,7 @@ const wxPay = require('../util/pay-util')
 
 
 
-
+const sendSMS = require('../util/sms-util').sendSMS
 
 
 
@@ -94,10 +95,17 @@ async function geneBill(book) {
 
         console.log("bill_mark = "+bill_mark)
         let start_date = formatTimeYMD(getNextMonth(rent_begin_date,i-1))
+        if(i!==1){
+            let _start_date = getNextMonth(rent_begin_date,i-1)
+            _start_date.setDate(_start_date.getDate()+1)
+            start_date = formatTimeYMD(_start_date)
+        }
+
         let over_date = formatTimeYMD(getNextMonth(rent_begin_date,i))
         let out_trade_no = wxPay.createOrderNum()
 
-        let title = start_date.split('/')[0]+'年'+start_date.split('/')[1]+'月'+'房租'
+        // let title = start_date.split('/')[0]+'年'+start_date.split('/')[1]+'月'+'房租'
+        let title = "第"+i+"期房租"
         let total_fee = book.money_per_month
 
         let newBill = new Bill({
@@ -193,13 +201,25 @@ module.exports = {
     async putRenterPhone(ctx) {
 
         let {phone, code} = ctx.request.body
-
+        let type = "RENTER_BIND_PHONE"
         let openid = ctx.login.openid
-        console.log(ctx.request.body)
-        //    判断手机号和验证码是否正确
-        if (!phone || code !== "123456") {
+        if (!phone || !code ) {
             throw new ApiError("验证码错误，请重新输入")
         }
+        //    判断手机号和验证码是否正确
+
+        let smscode =  await SMSCode.findOne({phone:phone, type:type,used_status:"NOTUSED"})
+        if(!smscode){
+            throw new ApiError("验证码错误，请重新输入")
+        }else{
+            if(code===smscode.code){
+                smscode.used_status ="USED"
+                await smscode.save()
+            }else{
+                throw new ApiError("验证码错误，请重新输入")
+            }
+        }
+
         //    用户表判断是否有手机号了
         let renter = await Renter.findOne({openid: openid});
         if (renter.phone) {
@@ -251,6 +271,31 @@ module.exports = {
             item.rent_end_date = formatTimeYMD(getNextMonth(new Date(item.rent_begin_date),rent_month_count))
             item.rent_begin_date = formatTimeYMD(new Date(item.rent_begin_date))
             item.house = house
+
+
+            //未支付的订单数，billcount
+
+            let bills =  await Bill.find({book_id: item._id,trade_state:"NOTPAY",is_delete_status: false})
+
+
+            let bills_return = []
+            let currentDate = new Date()
+            for(let i=0;i<bills.length;i++){
+                let start_date = new Date(bills[i].start_date)
+                if(start_date>currentDate){
+                    // console.log("大于今天，未到付款日期")
+                    if(bills[i].bill_mark==="1"){
+                        bills_return.push(bills[i])
+                    }
+                }else{
+                    bills_return.push(bills[i])
+                    // console.log("小于今天，已到付款日期")
+                }
+            }
+
+
+            let notpay_bill_count = bills_return.length
+            item.notpay_bill_count = notpay_bill_count
             books[i] = item
         }
 
@@ -391,11 +436,13 @@ module.exports = {
         let openid = ctx.login.openid
         let out_trade_no =bill.out_trade_no
         let body = bill.house_name+"-"+bill.title
-        // let total_fee = bill.total_fee
-        let total_fee = 1
+        let total_fee = bill.total_fee
+        // let total_fee = 1
         console.log(ctx.header.host)
 
         await requestWxPayData(out_trade_no,body,total_fee,openid, xml => {
+
+            console.log(xml)
             let return_code = getXMLNodeValue('return_code', xml)
             if (return_code !== 'SUCCESS') {
                 //通信失败
@@ -421,6 +468,7 @@ module.exports = {
             ctx.restSuccess({payData: payData})
 
         }, err => {
+
             console.log("获取支付数据出错")
             throw err
         })
@@ -459,7 +507,7 @@ module.exports = {
         if(book_id){
             //指定了book，获取该book_id下的账单，没有指定就获取全部
         }else{
-            let books = await Book.find({renter_id: openid, is_delete_status: false}, {is_delete_status: 0, __v: 0})
+            let books = await Book.find({renter_id: openid}, { __v: 0})
             book_id = {"$in":[]}
             for(let i = 0; i < books.length; i++){
                 book_id["$in"].push(books[i]._id)
@@ -482,7 +530,7 @@ module.exports = {
         }
 
 
-        let bills = await Bill.find({book_id: book_id,trade_state:trade_state,is_delete_status: false},{bill_mark:0,__v:0,is_delete_status:0})
+        let bills = await Bill.find({book_id: book_id,trade_state:trade_state,is_delete_status: false},{__v:0,is_delete_status:0})
         // let allBill = []
         //trade_state:"NOTPAY",
         //所有的账本，然后再根据账本的id去找
@@ -500,6 +548,10 @@ module.exports = {
             let start_date = new Date(bills[i].start_date)
             if(start_date>currentDate){
                 // console.log("大于今天，未到付款日期")
+                // console.log(bills[i].bill_mark)
+                if(bills[i].bill_mark==="1"){
+                    bills_return.push(bills[i])
+                }
             }else{
                 bills_return.push(bills[i])
                 // console.log("小于今天，已到付款日期")
@@ -511,6 +563,52 @@ module.exports = {
         ctx.restSuccess({list:bills})
     },
 
+
+    async toPostSMSCode(ctx) {
+        //type: RENTER_BIND_PHONE
+        // console.log("toPostSMSCode")
+        let {phone,type} = ctx.request.body
+        if(!phone||!type){
+            throw new ApiError("参数有误")
+        }
+
+        if(config.gongce_phone.indexOf(phone)>=0){
+            console.log('11111111111ssssssssssssssss')
+        }else{
+            throw new ApiError("该手机号码不在本次公测范围内")
+        }
+
+        let code = Math.random().toString().substr(2, 6)
+        while (code.startsWith("0")){
+            console.log(code)
+            code = Math.random().toString().substr(2, 6)
+        }
+        await sendSMS(phone,code,async res=>{
+            // console.log('----短信成功')
+            if(res.Message==="OK"&&res.Code==="OK"){
+                let smscode =  await SMSCode.findOne({phone:phone, type:type})
+                if(smscode){
+                    smscode.code = code
+                    smscode.update_date = Date.now()
+                    smscode.used_status="NOTUSED"
+                }else{
+                    smscode = new SMSCode({phone:phone, type:type, code:code})
+                }
+                smscode = await smscode.save()
+                // console.log("保存成功")
+                ctx.restSuccess({})
+            }
+        },async err=>{
+            console.log('----短信失败')
+            console.log(err)
+            throw new ApiError("短信发送失败："+err.data.Message)
+        })
+
+
+        //6位数的短信验证码
+
+
+    }
 
 
 }

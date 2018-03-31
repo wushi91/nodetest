@@ -1,5 +1,5 @@
 const APIError = require('./restful').APIError
-const request = require('../util/request')
+const request = require('../../util/request')
 
 const getUser = async (ctx, next) => {
     ctx.restful({

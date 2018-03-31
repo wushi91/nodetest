@@ -103,13 +103,13 @@ const requestWxPayData = async (out_trade_no,body,total_fee,openid,success,error
         limit_pay: wechat.limit_pay, //是否支付信用卡支付
     }
 
-    console.log("wechat.mch_id = "+wechat.mch_id)
-    console.log("wechat.renter_appid = "+wechat.renter_appid)
-    console.log("wechat.mch_key = "+wechat.mch_key)
+    // console.log("wechat.mch_id = "+wechat.mch_id)
+    // console.log("wechat.renter_appid = "+wechat.renter_appid)
+    // console.log("wechat.mch_key = "+wechat.mch_key)
     order.sign = paySign(order,wechat.mch_key)
-    console.log(order)
+    // console.log(order)
     let xmlData = getXmlFormat(order)
-    console.log(xmlData)
+    // console.log(xmlData)
 
 
     let options = {

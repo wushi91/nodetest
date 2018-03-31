@@ -12,7 +12,7 @@ const post_lander_token = lander_path_pre+'/accesstoken'
 const to_houses = lander_path_pre+'/houses'
 const to_delete_house = lander_path_pre+'/houses/:house_id'
 const to_book = lander_path_pre+'/books/:book_id'
-const to_houses_books = lander_path_pre + '/houses/books'
+const to_houses_books = lander_path_pre + '/books'
 const post_books_bills = lander_path_pre+ '/books/bills'
 const to_lander_bill = lander_path_pre + '/bills'
 const to_lander_accounts = lander_path_pre + '/accounts'
@@ -25,6 +25,9 @@ const to_renter_books = renter_path_pre + '/books'
 const to_wx_pay_data = renter_path_pre + '/wxpaydata'
 const to_renter_bill = renter_path_pre + '/bills'
 const to_renter_bill_detail = renter_path_pre + '/bills/:bill_id'
+const to_post_sms_code = renter_path_pre + '/smscodes'
+
+
 const wx_notify = '/notify'//实际上是/api
 /* url前缀为api的路由*/
 
@@ -39,6 +42,7 @@ module.exports = router
     .get(to_lander_bill,landerInfoController.toGetBill)
     .put(to_lander_bill,landerInfoController.toPutBillClose)
     .delete(to_delete_house,landerInfoController.toDeleteHouse)
+    .get(to_book,landerInfoController.toGetBookDetail)
     .delete(to_book,landerInfoController.toDeleteBook)
     .put(to_book,landerInfoController.toPutBookMoney)
     .get(to_lander_accounts,landerInfoController.toGetLanderAccount)
@@ -54,6 +58,7 @@ module.exports = router
     .get(to_renter_bill,renterInfoController.toGetBill)
     .post(wx_notify,renterInfoController.toWxNotify)
     .get(to_renter_bill_detail,renterInfoController.toGetBillDetail)
+    .post(to_post_sms_code,renterInfoController.toPostSMSCode)
     /*
     判断url前缀是否是api，如果是，则设置当前路由，否则舍弃，进行下一步。
     其实如果路由没有进到这里的处理方法，也会自动到下一步，所以我可以不用设置其他*/

@@ -9,13 +9,13 @@
 // }
 
 
-function sleep() {
-    console.log('ssss')
-    return new Promise((resolve,reject) => {
-        console.log('bbbb')
-        setTimeout(resolve,2000)
-    })
-}
+// function sleep() {
+//     console.log('ssss')
+//     return new Promise((resolve,reject) => {
+//         console.log('bbbb')
+//         setTimeout(resolve,2000)
+//     })
+// }
 
 
 // sleep().then(()=>{
@@ -39,10 +39,10 @@ function sleep() {
 //
 // console.log(regPath.test(path))
 
-const createNonceStr = require('./src/util/pay-util').createNonceStr
+// const createNonceStr = require('./src/util/pay-util').createNonceStr
 // const createTimeStamp = require('./src/util/wx-pay').createTimeStamp
 // const createBodyData = require('./src/util/wx-pay').createBodyData
-const createOrderNum = require('./src/util/pay-util').createOrderNum
+// const createOrderNum = require('./src/util/pay-util').createOrderNum
 
 // 对Date的扩展，将 Date 转化为指定格式的String
 // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
@@ -72,9 +72,9 @@ const createOrderNum = require('./src/util/pay-util').createOrderNum
 // console.log(getNextMonth(new Date(),-1))
 
 
-const formatTimeYMD = require('./src/util/util').formatTimeYMD
-const formatTime = require('./src/util/util').formatTime
-const getNextMonth = require('./src/util/util').getNextMonth
+// const formatTimeYMD = require('./src/util/util').formatTimeYMD
+// const formatTime = require('./src/util/util').formatTime
+// const getNextMonth = require('./src/util/util').getNextMonth
 // // let rent_begin_date = new Date('2018/03/14')
 // //
 // // let rent_end_date = formatTimeYMD(getNextMonth(rent_begin_date,1))
@@ -96,16 +96,47 @@ const getNextMonth = require('./src/util/util').getNextMonth
 //     // console.log(formatTimeYMD(getNextMonth(rent_begin_date,2)))
 // }
 
-let today = new Date()
-let yesterday  =  new Date()
-yesterday.setDate(today.getDate()-1)
-yesterday.setHours(23)
-yesterday.setMinutes(59)
-yesterday.setSeconds(59)
+// let today = new Date()
+// let yesterday  =  new Date()
+// yesterday.setDate(today.getDate()-1)
+// yesterday.setHours(23)
+// yesterday.setMinutes(59)
+// yesterday.setSeconds(59)
+//
+// let  tomorrow  =  new Date()
+// tomorrow.setDate(today.getDate()+1)
+// tomorrow.setHours(0)
+// tomorrow.setMinutes(0)
+// tomorrow.setSeconds(0)
+// console.log(formatTime(tomorrow))
 
-let  tomorrow  =  new Date()
-tomorrow.setDate(today.getDate()+1)
-tomorrow.setHours(0)
-tomorrow.setMinutes(0)
-tomorrow.setSeconds(0)
-console.log(formatTime(tomorrow))
+// const sendSMS = require('./src/util/sms-util').sendSMS
+//
+// sendSMS(14522000770,123444)
+
+// console.log("*")
+//
+// let n = 10
+// for(let i=1;i<=n;i++){
+//
+//     console.log(print(i))
+// }
+//
+// function print(count){
+//     let text = ''
+//     for(let i = 0;i<count;i++){
+//         text = text+"*"
+//     }
+//     return text
+// }
+// console.log( Date.now)
+// console.log( Date.now())
+//
+// const gongce_phone = require('../../config').gongce_phone
+//
+//
+// console.log(gongce_phone.indexOf("13822542317"))
+
+let date1 = new Date("2018/03/27 16:11:29")
+
+console.log(date1)

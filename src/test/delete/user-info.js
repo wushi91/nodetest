@@ -1,6 +1,6 @@
 const User = require('./../model/user')
 // const APIError = require('../util/restful').APIError
-const util = require('../util/util')
+const util = require('../../util/util')
 
 module.exports = {
     //注册

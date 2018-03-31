@@ -1,3 +1,12 @@
+
+
+
+/*
+*
+* 对于api接口使用统一的返回格式
+*
+* */
+
 module.exports = () => {
     return async (ctx, next) => {
         if (ctx.request.path.startsWith('/api/')) {

@@ -47,10 +47,17 @@ async function geneBill(book) {
 
         console.log("bill_mark = " + bill_mark)
         let start_date = formatTimeYMD(getNextMonth(rent_begin_date, i - 1))
+
+        if(i!==1){
+            let _start_date = getNextMonth(rent_begin_date,i-1)
+            _start_date.setDate(_start_date.getDate()+1)
+            start_date = formatTimeYMD(_start_date)
+        }
         let over_date = formatTimeYMD(getNextMonth(rent_begin_date, i))
         let out_trade_no = wxPay.createOrderNum()
 
-        let title = start_date.split('/')[0] + '年' + start_date.split('/')[1] + '月' + '房租'
+        // let title = start_date.split('/')[0] + '年' + start_date.split('/')[1] + '月' + '房租'
+        let title = "第"+i+"期房租"
         let total_fee = book.money_per_month
 
         let newBill = new Bill({
@@ -81,6 +88,8 @@ module.exports = {
             throw new ApiError("code不能为空")
         }
 
+        console.log('ssssssssss')
+        console.log(config)
         //1.获取openid
         let openid
         await requetWxOpenId(wx_login_code, config.lander_wx.appid, config.lander_wx.secret, res => {
@@ -88,12 +97,13 @@ module.exports = {
             if (res.errcode) {
                 throw new ApiError(res.errmsg, res.errcode)
             }
-            // console.log("成功")
+            console.log("成功")
             openid = res.openid
         }, err => {
             throw err
         })
 
+        console.log('保存用户')
         //2.保存用户
         let lander = await Lander.findOne({openid: openid});
         if (!lander) {
@@ -102,7 +112,7 @@ module.exports = {
                 openid: openid,
                 wx_user_info: wx_user_info
             });
-
+            console.log('保存用户1111')
             lander = await newLander.save();
             if (lander.errors) {
                 throw new ApiError('数据保存出错')
@@ -111,7 +121,7 @@ module.exports = {
                 console.log(lander)
             }
         }
-
+        console.log('保存用户2222')
 
         //3.获取token，根据lander_id，这里暂定openid生成token，然后保存在登录表里面，返回给用户即可
         let token = geneToken({openid: openid})
@@ -213,11 +223,19 @@ module.exports = {
             let item = houses[i].toObject()
             let book = await Book.findOne({house_id: item._id, is_delete_status: false})
 
+            if(book){
+                book = book.toObject()
+                let rent_month_count = parseInt(book.rent_month_count.split('个月')[0])
+
+                book.rent_end_date = formatTimeYMD(getNextMonth(new Date(book.rent_begin_date),rent_month_count))
+                book.rent_begin_date = formatTimeYMD(new Date(book.rent_begin_date))
+            }
+
+
             //还要给有renter_id的找头像，这个book有可能是空的
             if (book && book.renter_id) {
                 let renter = await Renter.findOne({openid: book.renter_id})
                 if (renter) {
-                    book = book.toObject()
                     book.user_image = renter.wx_user_info.avatarUrl
                 }
             }
@@ -358,7 +376,13 @@ module.exports = {
     //     ctx.restSuccess({list:bills})
     // }
 
-
+    /**
+     *
+     * *
+     * 房源删除后已经支付的账单还是要返回的，如此如此。
+     *
+     *
+     * */
     //获取所有账单
     async toGetBill(ctx) {
 
@@ -382,10 +406,11 @@ module.exports = {
         }
 
 
+
         if (book_id) {
             //指定了book，获取该book_id下的账单，没有指定就获取全部
         } else {
-            let houses = await House.find({openid: openid, is_delete_status: false}, {
+            let houses = await House.find({openid: openid}, {
                 openid: 1,
                 house_name: 1,
                 area: 1
@@ -395,20 +420,22 @@ module.exports = {
                 house_id["$in"].push(houses[i]._id)
             }
 
-            let books = await Book.find({house_id: house_id, is_delete_status: false}, {is_delete_status: 0, __v: 0})
+            let books = await Book.find({house_id: house_id}, {is_delete_status: 0, __v: 0})
             book_id = {"$in": []}
             for (let i = 0; i < books.length; i++) {
                 book_id["$in"].push(books[i]._id)
             }
         }
 
+        // console.log("-----books-----")
+        // console.log(books)
 
         //头像呢？ bill->book-->renter-->image
         let bills = await Bill.find({
             book_id: book_id,
-            trade_state: trade_state || "NOTPAY",
+            trade_state: trade_state ,
             is_delete_status: false
-        }, {bill_mark: 0, __v: 0, is_delete_status: 0})
+        }, { __v: 0, is_delete_status: 0}).sort("start_date")
 
 
         //筛选掉start_date大于今天的账单
@@ -418,25 +445,54 @@ module.exports = {
             let start_date = new Date(bills[i].start_date)
             if (start_date > currentDate) {
                 // console.log("大于今天，未到付款日期")
+
+
+                if(bills[i].bill_mark==="1"){
+                    bills_return.push(bills[i])
+                }
             } else {
                 bills_return.push(bills[i])
                 // console.log("小于今天，已到付款日期")
             }
         }
-
         bills = bills_return
 
 
+        //筛选掉账本删除，支付状态为NOTPAY的账单
+        bills_return = []
         for (let i = 0; i < bills.length; i++) {
             let item = bills[i].toObject()
-            let book = await Book.findOne({_id: item.book_id, is_delete_status: false}, {is_delete_status: 0, __v: 0})
-            let renter = await Renter.findOne({openid: book.renter_id})
-            if (renter) {
-                item.user_image = renter.wx_user_info.avatarUrl
-                bills[i] = item
+            let book = await Book.findOne({_id: item.book_id}, { __v: 0})
+
+            if(book.is_delete_status&&item.trade_state==="NOTPAY"){
+                console.log("要删除")
+            }else{
+                //    设置头像
+                let renter = await Renter.findOne({openid: book.renter_id})
+                if (renter) {
+                    item.user_image = renter.wx_user_info.avatarUrl
+                }
+
+                bills_return.push(item)
             }
 
         }
+        bills = bills_return
+
+
+
+
+        // for (let i = 0; i < bills.length; i++) {
+        //     let item = bills[i].toObject()
+        //     let book = await Book.findOne({_id: item.book_id}, { __v: 0})
+        //
+        //     let renter = await Renter.findOne({openid: book.renter_id})
+        //     if (renter) {
+        //         item.user_image = renter.wx_user_info.avatarUrl
+        //         bills[i] = item
+        //     }
+        //
+        // }
         //trade_state:"NOTPAY",
         //所有的账本，然后再根据账本的id去找
         // for (let i = 0; i < books.length; i++) {
@@ -577,9 +633,11 @@ module.exports = {
 
 //    创建提现的订单
     async toPutLanderAccountBalance(ctx) {
+
+        console.log("toPutLanderAccountBalance")
         let openid = ctx.login.openid
         let {amount} = ctx.request.body
-
+        console.log("amount = "+amount)
         amount = parseInt(amount)
         if (!amount) {
             throw new ApiError('参数出错')
@@ -745,6 +803,31 @@ module.exports = {
         ctx.restSuccess({cashOrder: cashOrder})
 
     },
+
+    async toGetBookDetail(ctx) {
+        console.log('toGetBookDetail')
+        let {book_id} = ctx.params
+
+        if (!book_id || book_id === "undefined") {
+            throw new ApiError('没有找到该账本')
+        }
+        let book = await Book.findOne({_id: book_id, is_delete_status: false})
+        if (!book) {
+            throw new ApiError('没有找到该账本')
+        }
+
+        book = book.toObject()
+        let rent_month_count = parseInt(book.rent_month_count.split('个月')[0])
+
+        book.rent_end_date = formatTimeYMD(getNextMonth(new Date(book.rent_begin_date),rent_month_count))
+        book.rent_begin_date = formatTimeYMD(new Date(book.rent_begin_date))
+
+        console.log("**********************")
+        console.log(book)
+        ctx.restSuccess({book: book})
+
+    }
+
 
 
 }

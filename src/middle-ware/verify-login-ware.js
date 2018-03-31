@@ -3,26 +3,25 @@ const AuthError = require('../util/error').AuthError
 const RenterLogin = require('./../model/RenterLogin')
 const LanderLogin = require('./../model/LanderLogin')
 
-function unlessPath(ctx,paths) {
 
+function unlessPath(ctx,paths) {
     for(let i=0;i<paths.length;i++){
         if(paths[i].test(ctx.request.path)){
             return true
         }
     }
-
     return false
 }
 
+/*
+*
+* 每个api请求都带有token，需要判断token对应的登陆状态是否有效
+*
+* */
 
 
-//数据库中查找token对应的openid，这样可以保证一个用户只有一个有效的token
 module.exports = (unless)=>{
-
     return async (ctx,next)=>{
-
-        //访问unless路径不需要登录状态
-
         if(unlessPath(ctx,unless)){
         }else{
             //根据对应的token表寻找openid
@@ -37,8 +36,6 @@ module.exports = (unless)=>{
             if(!loginStatus){
                 throw new AuthError("请重新登录")
             }
-
-            // console.log(loginStatus)
             ctx.login= {openid :loginStatus.openid}
         }
 

@@ -33,15 +33,23 @@ module.exports = {
 
         mch_lander_id:'1487882592',
         mch_lander_key:'sunchuanjunzufangzhangben8812345',
-        mch_id:'1492103342',
-        mch_key:'sunchuanjunzufangzhangbenfk88123',
+
+        mch_id:'1487882592',
+        mch_key:'sunchuanjunzufangzhangben8812345',
+        // mch_id:'1492103342',
+        // mch_key:'sunchuanjunzufangzhangbenfk88123',
         // mch_id:'1485503632',
         // mch_key:'qingren135SUN1007chuan0453junabc',
-        notify_url : 'https://998d793e.ngrok.io/api/notify',
+        notify_url : 'https://www.0755qr.com/api/notify',
         // 微信支付回调通知支付结果
 
         // 微信支付是否支持信用卡支付
         limit_pay: 'no_credit',
+    },
+
+    alisms:{
+        access_key_id:'LTAIzSa9WLkLoVKx',
+        secret_access_key:'NfY5ash9mHoXzdGwVn5spLg0VAp63O'
     },
     //不校验token的请求路径
     un_verity_token_path:[
@@ -52,6 +60,9 @@ module.exports = {
         /^\/api\/renter\/accesstoken/,
         /^\/favicon.ico/,
         /^\/api\/notify/
-    ]
+    ],
 
+    //公测资格的手机号
+    gongce_phone:["13822542317","17748674317","13410052773","13510070453"]
+//
 }

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const config = require('../../config')
+const config = require('../../../config')
 const UserModel = require('../model/User')
 
 //据说关闭自动索引速度会快一点

@@ -13,6 +13,7 @@
   "author": "wls",
   "license": "Apache-2.0",
   "dependencies": {
+    "@alicloud/sms-sdk": "^1.0.8",
     "bcrypt": "^1.0.3",
     "jsonwebtoken": "^8.1.1",
     "koa": "^2.0.0",

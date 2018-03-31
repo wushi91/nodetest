@@ -6,8 +6,6 @@ const xmlParser = require('koa-xml-body')
 const bodyParser = require('koa-bodyparser')
 const jwt = require('jsonwebtoken')
 const router = require('koa-router')()
-
-
 //自定义中间层
 const error = require('./middle-ware/error-ware')
 const restify = require('./middle-ware/restify-ware')
@@ -24,31 +22,18 @@ const config = require('../config')
 
 const app = new Koa();
 
-//优化log显示,方便调试
-app.use(logger())
 
-// 错误处理中间层
+app.use(logger())//优化log显示,方便调试
 app.use(error())
-
-//微信返回的xml解析
-app.use(xmlParser())
-
-//表单解析,可以通过request.body获取post数据
-app.use(bodyParser())
-
-// restful api数据返回的格式化 意义一般
+app.use(xmlParser())//微信返回的xml解析
+app.use(bodyParser())//表单解析,可以通过request.body获取post数据
 app.use(restify())
-//
-
-// token验证，这里是验证token的有效性
 app.use(verifyToken(config.token.secret,config.un_verity_token_path))
-
-//登陆验证，判断token是否有对应的用户id(根据token寻找用户id)
 app.use(verifyLogin(config.un_verity_token_path))
 
 //需要加入数据权限层，后期记得加入
 
-//路由
+//路由控制层
 router.use(htmlRouter.routes());
 router.use('/api', apiRouter.routes(), apiRouter.allowedMethods());
 app.use(router.routes());
